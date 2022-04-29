@@ -1,3 +1,4 @@
+/*
 for w in map.workers {
     // Logic to check worker placement
 }
@@ -10,6 +11,11 @@ for x in 0..40 {
         // other logic
     }
 }
+*/
+
+let version = 0;
+
+info(`Version 0`);
 
 for w in 0..8 {
     let r = (rand() % 4).abs();
