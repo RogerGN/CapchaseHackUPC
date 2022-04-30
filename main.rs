@@ -30,6 +30,20 @@ for x in 0..40 {
 let width = 40;
 let height = 40;
 
+let n_workers = 8;
+
+// I have to init collision matrix with positions of workers
+let collision_matrix = build_matrix(width, height);
+
+for w in 0..n_workers {
+    let x = worker(w).x;
+    let y = worker(w).y;
+
+    collision_matrix[x][y] = 1;
+}
+
+info(`collision matrix ${collision_matrix[34][33]}`);
+
 // version
 let version = 1;
 info(`version ${version}`);
@@ -127,11 +141,6 @@ fn find_neighbours_positions(current_position, map, width, height) {
     return neighbours_positions;
 }
 
-// no checks
-fn move_to_position(current_x, current_y, dest_x, dest_y) {
-    return [];
-}
-
 fn find_team_color() {
     return worker(0).color;
 }
@@ -220,23 +229,96 @@ fn dump_positions(positions) {
     }
 }
 
+fn move_to_position(worker, position, collision_matrix) {
+    // move towards the position if possible
+
+    // just move to position for now
+
+    let target_x = position[0];
+    let target_y = position[1];
+
+    let local_target_x = 0;
+    let local_target_y = 0;
+
+    // x
+    let x_difference = worker.x - target_x;
+    if x_difference < 0 {
+        // go left
+        local_target_x = worker.x + 1;
+        local_target_y = worker.y;
+        if collision_matrix[local_target_x][local_target_y] == 0 {
+            worker.move_right();
+            collision_matrix[local_target_x][local_target_y] = 1;
+            collision_matrix[worker.x][worker.y] = 0;
+            return collision_matrix;
+        }
+    }
+    if x_difference > 0 {
+        // go right
+        local_target_x = worker.x - 1;
+        local_target_y = worker.y;
+        if collision_matrix[local_target_x][local_target_y] == 0 {
+            worker.move_left();
+            collision_matrix[local_target_x][local_target_y] = 1;
+            collision_matrix[worker.x][worker.y] = 0;
+            return collision_matrix;
+        }
+    }
+
+
+    // y
+    let y_difference = worker.y - target_y;
+    if y_difference < 0 {
+        // go up
+        local_target_x = worker.x;
+        local_target_y = worker.y + 1;
+        if collision_matrix[local_target_x][local_target_y] == 0 {
+            worker.move_up();
+            collision_matrix[local_target_x][local_target_y] = 1;
+            collision_matrix[worker.x][worker.y] = 0;
+            return collision_matrix;
+        }
+    }
+    if y_difference > 0 {
+        // go down
+        local_target_x = worker.x;
+        local_target_y = worker.y - 1;
+        if collision_matrix[local_target_x][local_target_y] == 0 {
+            worker.move_down();
+            collision_matrix[local_target_x][local_target_y] = 1;
+            collision_matrix[worker.x][worker.y] = 0;
+            return collision_matrix;
+        }
+    }
+
+    // otherwise stay still
+    return collision_matrix;
+
+}
+
 
 let corner_position = find_corner_position(width, height);
 let team_color = find_team_color();
 info(`corner position: ${corner_position}`);
 info(`team color: ${team_color}`);
 
-let closest_colorable_tiles = find_closest_colorable_tiles_to_corner_position(8, corner_position, map, width, height, team_color);
-dump_positions(closest_colorable_tiles);
+let closest_colorable_tiles = find_closest_colorable_tiles_to_corner_position(n_workers, corner_position, map, width, height, team_color);
+// dump_positions(closest_colorable_tiles);
 
-for w in 0..8 {
-    // get useful tiles
-    // useful_tiles = get_useful_tiles();
-
-    // choose randomly between useful tiles
-    // let choice = (rand() % len(useful_tiles)).abs();
-    // position = useful_tiles[choice];
-
-    // move_to_position(worker(w).x, worker(w).y, po);
-
+if len(closest_colorable_tiles) < n_workers {
+    // add random positions
+    let remaining_positions_number = n_workers - len(closest_colorable_tiles);
+    for i in 0..remaining_positions_number {
+        let random_x = (rand() % width).abs();
+        let random_y = (rand() % height).abs();
+        closest_colorable_tiles.push([random_x, random_y]);
+    }
 }
+
+for index in 0..n_workers {
+    collision_matrix = move_to_position(worker(index), closest_colorable_tiles[index], collision_matrix);
+    info(`${index} to ${closest_colorable_tiles[index]} at ${worker(index).x} - ${worker(index).y}`);
+}
+
+// dump corner color
+info(`corner color: ${map[39][39]}`);
