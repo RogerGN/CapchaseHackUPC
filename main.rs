@@ -148,7 +148,7 @@ fn find_corner_position(width, height) {
     return position;
 }
 
-fn find_closest_colorable_tiles_to_corner_position(n, target_position, map, width, height, team_color) {
+fn find_closest_colorable_tiles_to_position(n, target_position, map, width, height, team_color) {
     /*
     It finds the first "n" closest colorable tiles to the target position (it only works for corner positions)
 
@@ -184,6 +184,63 @@ fn find_closest_colorable_tiles_to_corner_position(n, target_position, map, widt
             if visited_matrix[neighbour_x][neighbour_y] == 0 {
                 // if not visited yet
                 queue.push(neighbour_position);
+                visited_matrix[neighbour_x][neighbour_y] = 1;
+            }
+        }
+    }
+    
+    return closest_colorable_tiles;
+}
+
+
+fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map, width, height, team_color) {
+    /*
+    It finds the first "n" closest colorable tiles to the target position (it only works for corner positions)
+    It finds all tiles at the same distance
+
+    A colorable tile is a tile that is empty or colored with an enemy color
+    */
+
+    // Visited matrix
+    let visited_matrix = build_matrix(width, height);
+
+    // I should run a bfs starting from the target position
+    let closest_colorable_tiles = [];
+
+    // Init bfs queue
+    let level = 0;
+    let queue = [[target_position, level]]; // position, level
+    let target_x = target_position[0];
+    let target_y = target_position[1];
+    visited_matrix[target_x][target_y] = 1;
+    let found_level = -1;
+
+    while len(queue) > 0 {
+        level = level + 1;
+        let current_position_level = queue.remove(0);
+        let current_position = current_position_level[0];
+        let current_level = current_position_level[1];
+        let x = current_position[0];
+        let y = current_position[1];
+
+        if map[x][y] != team_color {
+            if found_level == -1 || found_level == current_level {
+                closest_colorable_tiles.push(current_position);
+                found_level = current_level;
+            }
+            if current_level > found_level {
+                return closest_colorable_tiles;
+            }
+        }
+
+        // Add neighbours to the queue
+        let neighbours_positions = find_neighbours_positions(current_position, map, width, height);
+        for neighbour_position in neighbours_positions {
+            let neighbour_x = neighbour_position[0];
+            let neighbour_y = neighbour_position[1];
+            if visited_matrix[neighbour_x][neighbour_y] == 0 {
+                // if not visited yet
+                queue.push([neighbour_position, level]);
                 visited_matrix[neighbour_x][neighbour_y] = 1;
             }
         }
@@ -285,7 +342,7 @@ let team_color = find_team_color();
 info(`corner position: ${memory.corner_position}`);
 info(`team color: ${team_color}`);
 
-let closest_colorable_tiles = find_closest_colorable_tiles_to_corner_position(n_workers, memory.corner_position, map, width, height, team_color);
+let closest_colorable_tiles = find_closest_colorable_tiles_to_position(n_workers, memory.corner_position, map, width, height, team_color);
 // dump_positions(closest_colorable_tiles);
 
 if len(closest_colorable_tiles) < n_workers {
@@ -298,6 +355,7 @@ if len(closest_colorable_tiles) < n_workers {
     }
 }
 
+/*
 for w in 0..n_workers {
     let min_distance = 1000;
     let position_index = 1000;
@@ -317,7 +375,19 @@ for w in 0..n_workers {
     collision_matrix = move_to_position(worker, closest_colorable_tiles[position_index], collision_matrix);
     info(`${closest_colorable_tiles[position_index]} at ${worker.x} - ${worker.y}`);
 }
+*/
 
+// for each worker find the closest empty or enemy tile
+for w in 0..n_workers {
+    let worker = worker(w);
+    let worker_position = [worker.x, worker.y];
+    let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, width, height, team_color);
+    // chose a random position
+    // if positions is Null I have to chose random I think
+    let index = (rand() % len(positions)).abs();
+    collision_matrix = move_to_position(worker, positions[index], collision_matrix);
+    info(`${positions[0]} at ${worker.x} - ${worker.y}`);
+}
 
 
 // dump corner color
