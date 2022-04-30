@@ -51,32 +51,6 @@ info(`version ${version}`);
 let occupied_positions = [];
 let number_of_occupied_positions = 0;
 
-fn is_position_free(x, y, occupied_positions) {
-    // search in occupied positions (linear search)
-    for i in 0..len(occupied_positions) {
-        if occupied_positions.x == x  && occupied_positions.y == y {
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-fn is_useful_tile(x, y, occupied_positions, number_of_occupied_positions, map, width, height) {
-    if !is_position_free(x, y, occupied_positions, number_of_occupied_positions) {
-        return false;
-    }
-
-    // search in occupied positions (linear search)
-    for i in 0..number_of_occupied_positions {
-        if occupied_positions.x == x  && occupied_positions.y == y {
-            return false;
-        }
-    }
-    
-    return true;
-}
-
 fn build_matrix(width, height) {
     /*
     It builds a matrix initializing it to 0
@@ -296,6 +270,11 @@ fn move_to_position(worker, position, collision_matrix) {
 
 }
 
+fn compute_distance(position_a, position_b) {
+    let distance = abs(position_a[0] - position_b[0]) + abs(position_a[1] - position_b[1]);
+
+    return distance;
+}
 
 let corner_position = find_corner_position(width, height);
 let team_color = find_team_color();
@@ -315,10 +294,30 @@ if len(closest_colorable_tiles) < n_workers {
     }
 }
 
-for index in 0..n_workers {
-    collision_matrix = move_to_position(worker(index), closest_colorable_tiles[index], collision_matrix);
-    info(`${index} to ${closest_colorable_tiles[index]} at ${worker(index).x} - ${worker(index).y}`);
+let workers = [];
+for i in 0..n_workers {
+    workers.push(worker(i));
+}
+
+for position in closest_colorable_tiles {
+    let min_distance = 1000;
+    let worker_index = 1000;
+    for i in 0..len(workers) {
+        // I should not change the target once I chose the it.
+        let worker = workers[i];
+
+        let distance = compute_distance(position, [worker.x, worker.y]);
+        if distance < min_distance {
+            min_distance = distance;
+            worker_index = i;
+        }
+    }
+
+    collision_matrix = move_to_position(worker(worker_index), position, collision_matrix);
+    info(`${position} at ${worker(worker_index).x} - ${worker(worker_index).y}`);
+
+    workers.remove(worker_index);
 }
 
 // dump corner color
-info(`corner color: ${map[39][39]}`);
+//info(`corner color: ${map[39][39]}`);
