@@ -27,7 +27,10 @@ info(`after init workers`);
 // The collision matrix keeps track of the actual or future positions of our workers
 // and is used in order to avoid to move a worker in a tile that is or will be occipied by another worker during the next iteration
 let COLLISION_MATRIX = build_matrix(WIDTH, HEIGHT);
+info(`after build matrix`);
+
 for w in 0..N_WORKERS {
+    info(`worker w: $(w)`);
     info(`worker: ${worker(w).x}-${worker(w).y}`);
 
     let x = worker(w).x;
@@ -72,12 +75,14 @@ fn build_matrix(width, height) {
     */
 
     let matrix = [];
+    info(`after allocate matrix`);
     for i in 0..width {
         matrix.push([]);
         for j in 0..height {
             matrix[i].push(0);
         }
     }
+    info(`after matrix`);
 
     return matrix;
 }
@@ -171,7 +176,6 @@ fn find_corner_position(width, height) {
             position[1] = height - 1;
         }
     }
-
     return position;
 }
 */
@@ -181,31 +185,24 @@ fn find_corner_position(width, height) {
 fn find_closest_colorable_tiles_to_position(n, target_position, map, width, height, team_color) {
     /*
     It finds the first "n" closest colorable tiles to the target position (it only works for corner positions)
-
     A colorable tile is a tile that is empty or colored with an enemy color
     */
-
     // Visited matrix
     let visited_matrix = build_matrix(width, height);
-
     // I should run a bfs starting from the target position
     let closest_colorable_tiles = [];
-
     // Init bfs queue
     let queue = [target_position];
     let target_x = target_position[0];
     let target_y = target_position[1];
     visited_matrix[target_x][target_y] = 1;
-
     while len(queue) > 0 && len(closest_colorable_tiles) < n {
         let current_position = queue.remove(0);
         let x = current_position[0];
         let y = current_position[1];
-
         if map[x][y] != team_color {
             closest_colorable_tiles.push(current_position);
         }
-
         // Add neighbours to the queue
         let neighbours_positions = find_neighbours_positions(current_position, map, width, height);
         for neighbour_position in neighbours_positions {
@@ -248,7 +245,6 @@ fn is_position_valid(target_position, width, height) {
 fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map, width, height, team_color, other_workers_matrix) {
     /*
     It returns the closest colorable tiles to the target position. If some tiles has the same distance, it returns all of them.
-
     A colorable tile is a tile that is empty or colored with an enemy color
     */
 
@@ -314,7 +310,6 @@ fn dump_positions(positions) {
         let position = positions[i];
         let x = position[0];
         let y = position[1];
-
         info(`position ${i}: [${x}][${y}]`);
     }
 }
@@ -325,20 +320,16 @@ fn dump_positions(positions) {
 fn compute_position_bfs(worker_position, target_position, collision_matrix, width, height) {
     // compute path from worker position to target position
     // I want to compute the next from worker position to target position
-
     // Visited matrix
     let visited_matrix = build_matrix(width, height);
-
     // Init bfs queue
     // I start from the destination
     let queue = [target_position];
     let target_x = target_position[0];
     let target_y = target_position[1];
     visited_matrix[target_x][target_y] = 1;
-
     while len(queue) > 0 {
         let current_position = queue.remove(0);
-
         if current_position == worker_position {
             // return neighbour in visited matrix
             let neighbours_positions = find_neighbours_positions(current_position, map, width, height);
@@ -348,10 +339,8 @@ fn compute_position_bfs(worker_position, target_position, collision_matrix, widt
                 }
             }
         }
-
         let x = current_position[0];
         let y = current_position[1];
-
         // Add neighbours to the queue
         let neighbours_positions = find_neighbours_positions(current_position, map, width, height);
         for neighbour_position in neighbours_positions {
@@ -378,7 +367,6 @@ fn move_to_position_2(worker_position, target_position, collision_matrix, full_m
     if position[0] == -1 {
         return;
     }
-
     move_to_position(worker, target_position, collision_matrix);
 }
 */
