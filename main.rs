@@ -276,12 +276,16 @@ fn compute_distance(position_a, position_b) {
     return distance;
 }
 
-let corner_position = find_corner_position(width, height);
+// I should do this only once
+if memory.registered_corner_position != `` {
+    memory.corner_position = find_corner_position(width, height);
+    memory.registered_corner_position = ``;
+}
 let team_color = find_team_color();
-info(`corner position: ${corner_position}`);
+info(`corner position: ${memory.corner_position}`);
 info(`team color: ${team_color}`);
 
-let closest_colorable_tiles = find_closest_colorable_tiles_to_corner_position(n_workers, corner_position, map, width, height, team_color);
+let closest_colorable_tiles = find_closest_colorable_tiles_to_corner_position(n_workers, memory.corner_position, map, width, height, team_color);
 // dump_positions(closest_colorable_tiles);
 
 if len(closest_colorable_tiles) < n_workers {
@@ -294,30 +298,27 @@ if len(closest_colorable_tiles) < n_workers {
     }
 }
 
-let workers = [];
-for i in 0..n_workers {
-    workers.push(worker(i));
-}
-
-for position in closest_colorable_tiles {
+for w in 0..n_workers {
     let min_distance = 1000;
-    let worker_index = 1000;
-    for i in 0..len(workers) {
+    let position_index = 1000;
+    let worker = worker(w);
+    for i in 0..len(closest_colorable_tiles) {
+
         // I should not change the target once I chose the it.
-        let worker = workers[i];
+        let position = closest_colorable_tiles[i];
 
         let distance = compute_distance(position, [worker.x, worker.y]);
         if distance < min_distance {
             min_distance = distance;
-            worker_index = i;
+            position_index = i;
         }
     }
 
-    collision_matrix = move_to_position(worker(worker_index), position, collision_matrix);
-    info(`${position} at ${worker(worker_index).x} - ${worker(worker_index).y}`);
-
-    workers.remove(worker_index);
+    collision_matrix = move_to_position(worker, closest_colorable_tiles[position_index], collision_matrix);
+    info(`${closest_colorable_tiles[position_index]} at ${worker.x} - ${worker.y}`);
 }
+
+
 
 // dump corner color
 //info(`corner color: ${map[39][39]}`);
