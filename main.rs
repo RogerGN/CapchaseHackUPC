@@ -311,6 +311,38 @@ fn compute_distance(position_a, position_b) {
 }
 
 
+fn evaluate_position_nearness(position, map, target_color, width, height) {
+    // It counts the number of adjacent tiles (4-connected) between position and the tiles in map with the same color
+    let count = 0;
+
+    let neighbours = find_neighbours_positions(position, map, width, height);
+    for neighbour in neighbours {
+        if map[neighbour[0]][neighbour[1]] == target_color {
+            count = count + 1;
+        }
+    }
+
+    return count;
+}
+
+
+fn select_closest_position_from_connected_components(candidate_positions, map, target_color, width, height) {
+    let max_nearness = -1;
+    let max_nearness_index = -1;
+
+    for i in 0..len(candidate_positions) {
+        let current_position = candidate_positions[i];
+        let nearness = evaluate_position_nearness(current_position, map, target_color, width, height);
+        if max_nearness == -1 || nearness > max_nearness {
+            max_nearness = nearness;
+            max_nearness_index = i;
+        }
+    }
+
+    return candidate_positions[max_nearness_index];
+}
+
+
 // I should do this only once
 if "corner_position" in memory == false {
     memory.corner_position = find_corner_position(WIDTH, HEIGHT);
@@ -324,10 +356,22 @@ for w in 0..N_WORKERS {
     let worker = worker(w);
     let worker_position = [worker.x, worker.y];
     let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, WIDTH, HEIGHT, team_color);
+    info(`${worker.x} - ${worker.y} - ${positions}`);
     if len(positions) > 0 {
+        let position = [0, 0];
+
+        // choose a random strategy
+        let strategy = (rand() % 2).abs();
+
         // Select a random position from the proposed ones
-        let index = (rand() % len(positions)).abs();
-        COLLISION_MATRIX = move_to_position(worker, positions[index], COLLISION_MATRIX);
+        if strategy == 0 {
+            let index = (rand() % len(positions)).abs();
+            position = positions[index];
+        } else {
+            position = select_closest_position_from_connected_components(positions, map, team_color, WIDTH, HEIGHT);
+        }
+
+        COLLISION_MATRIX = move_to_position(worker, position, COLLISION_MATRIX);
         // info(`${worker.x} - ${worker.y} moves to ${positions[0]}`);
     }
 }
