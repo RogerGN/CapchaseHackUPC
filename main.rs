@@ -1,45 +1,21 @@
-// Memory check
-// Don't move (first move)
-if "n_tickets" in memory == false {
-    memory.n_tickets = 0;
-    info(`first tick`);
-    return;
-} else {
-    memory.n_tickets = memory.n_tickets + 1;
-}
-
-if memory.n_tickets == 10 {
-    info(`10 tick`);
-    return;
-}
-
-info(`not first tick`);
-
 // I assume that the map is (40 by 40)
 let WIDTH = 40;
 let HEIGHT = 40;
 let N_WORKERS = 8;
 
-info(`after init workers`);
-
-
 // I have to init the collision matrix with the positions of the workers
 // The collision matrix keeps track of the actual or future positions of our workers
 // and is used in order to avoid to move a worker in a tile that is or will be occipied by another worker during the next iteration
 let COLLISION_MATRIX = build_matrix(WIDTH, HEIGHT);
-info(`after build matrix`);
 
 for w in 0..N_WORKERS {
-    info(`worker w: $(w)`);
-    info(`worker: ${worker(w).x}-${worker(w).y}`);
+    // info(`worker: ${worker(w).x}-${worker(w).y}`);
 
     let x = worker(w).x;
     let y = worker(w).y;
 
     COLLISION_MATRIX = matrix_set(COLLISION_MATRIX, x, y, HEIGHT, 1); // 1 means occupied by my worker - 0 means free
 }
-
-info(`after init first matrix`);
 
 // Other workers matrix
 let OTHER_WORKERS_MATRIX = build_matrix(WIDTH, HEIGHT);
@@ -56,8 +32,6 @@ for w in 0..N_WORKERS {
     OTHER_WORKERS_MATRIX = matrix_set(OTHER_WORKERS_MATRIX, x, y, HEIGHT, 0); // 1 means occupied by other worke - 0 means free
 }
 
-info(`after init other matrix`);
-
 // full matrix
 let FULL_MATRIX = build_matrix(WIDTH, HEIGHT);
 for worker in map.workers {
@@ -66,8 +40,6 @@ for worker in map.workers {
 
     FULL_MATRIX = matrix_set(FULL_MATRIX, x, y, HEIGHT, 1); // 1 means occupied by other worke - 0 means free
 }
-
-info(`after init full matrix`);
 
 
 fn build_matrix(width, height) {
@@ -105,14 +77,12 @@ fn build_matrix_not_flat(width, height) {
     */
 
     let matrix = [];
-    info(`after allocate matrix`);
     for i in 0..width {
         matrix.push([]);
         for j in 0..height {
             matrix[i].push(0);
         }
     }
-    info(`after matrix`);
 
     return matrix;
 }
@@ -423,9 +393,7 @@ fn move_to_position(worker, target_position, collision_matrix, width, height, ma
         local_target_x = worker.x + 1;
         local_target_y = worker.y;
         if matrix_get(collision_matrix, local_target_x, local_target_y, height) == 0 {
-            info(`old worker x: ${worker.x}`);
             worker.move_right();
-            info(`new worker x: ${worker.x}`);
             collision_matrix = matrix_set(collision_matrix, local_target_x, local_target_y, height, 1);
             collision_matrix = matrix_set(collision_matrix, worker.x, worker.y, height, 0);
             return collision_matrix;
@@ -546,10 +514,10 @@ if "corner_position" in memory == false {
 */
 let team_color = find_team_color();
 
-info(`after find color`);
+// info(`after find color`);
 
-info(`corner position: ${memory.corner_position}`);
-info(`team color: ${team_color}`);
+// info(`corner position: ${memory.corner_position}`);
+// info(`team color: ${team_color}`);
 
 // For each worker find the closest empty or enemy tile
 for w in 0..N_WORKERS {
