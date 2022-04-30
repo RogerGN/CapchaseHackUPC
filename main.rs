@@ -36,7 +36,7 @@ for w in 0..N_WORKERS {
     let x = worker(w).x;
     let y = worker(w).y;
 
-    COLLISION_MATRIX[x][y] = 1; // 1 means occupied by my worker - 0 means free
+    COLLISION_MATRIX = matrix_set(COLLISION_MATRIX, x, y, HEIGHT, 1); // 1 means occupied by my worker - 0 means free
 }
 
 info(`after init first matrix`);
@@ -47,13 +47,13 @@ for worker in map.workers {
     let x = worker.x;
     let y = worker.y;
 
-    OTHER_WORKERS_MATRIX[x][y] = 1; // 1 means occupied by other worke - 0 means free
+    OTHER_WORKERS_MATRIX = matrix_set(OTHER_WORKERS_MATRIX, x, y, HEIGHT, 1); // 1 means occupied by other worke - 0 means free
 }
 for w in 0..N_WORKERS {
     let x = worker(w).x;
     let y = worker(w).y;
 
-    OTHER_WORKERS_MATRIX[x][y] = 0; // 1 means occupied by other worke - 0 means free
+    OTHER_WORKERS_MATRIX = matrix_set(OTHER_WORKERS_MATRIX, x, y, HEIGHT, 0); // 1 means occupied by other worke - 0 means free
 }
 
 info(`after init other matrix`);
@@ -64,12 +64,42 @@ for worker in map.workers {
     let x = worker.x;
     let y = worker.y;
 
-    FULL_MATRIX[x][y] = 1; // 1 means occupied by other worke - 0 means free
+    FULL_MATRIX = matrix_set(FULL_MATRIX, x, y, HEIGHT, 1); // 1 means occupied by other worke - 0 means free
 }
 
 info(`after init full matrix`);
 
+
 fn build_matrix(width, height) {
+    let matrix = [];
+
+    for i in 0..width {
+        for j in 0..height {
+            matrix.push(0);
+        }
+    }
+
+    return matrix;
+}
+
+
+fn matrix_get(matrix, x, y, height) {
+    let index = x * height + y;
+
+    return matrix[index];
+}
+
+
+fn matrix_set(matrix, x, y, height, value) {
+    let index = x * height + y;
+
+    matrix[index] = value;
+
+    return matrix;
+}
+
+
+fn build_matrix_not_flat(width, height) {
     /*
         It builds a matrix and it initialize each element to 0
     */
@@ -224,7 +254,7 @@ fn find_closest_colorable_tiles_to_position(n, target_position, map, width, heig
 fn is_reacheable(position, other_workers_matrix, map, width, height) {
     let neighbours = find_neighbours_positions(position, map, width, height);
     for neighbour in neighbours {
-        if other_workers_matrix[neighbour[0]][neighbour[1]] == 0 {
+        if matrix_get(other_workers_matrix, neighbour[0], neighbour[1], height) == 0 {
             return true;
         }
     }
@@ -264,7 +294,7 @@ fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map,
     let queue = [[target_position, level]]; // position, level
     let target_x = target_position[0];
     let target_y = target_position[1];
-    visited_matrix[target_x][target_y] = 1;
+    visited_matrix = matrix_set(visited_matrix, target_x, target_y, height, 1);
     let stop_level = -1;
 
     while len(queue) > 0 {
@@ -290,10 +320,10 @@ fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map,
         for neighbour_position in neighbours_positions {
             let neighbour_x = neighbour_position[0];
             let neighbour_y = neighbour_position[1];
-            if visited_matrix[neighbour_x][neighbour_y] == 0 {
+            if matrix_get(visited_matrix, neighbour_x, neighbour_y, height) == 0 {
                 // if it has not been visited yet
                 queue.push([neighbour_position, level]);
-                visited_matrix[neighbour_x][neighbour_y] = 1;
+                visited_matrix = matrix_set(visited_matrix, neighbour_x, neighbour_y, height, 1);
             }
         }
     }
@@ -392,12 +422,12 @@ fn move_to_position(worker, target_position, collision_matrix, width, height) {
         // go right
         local_target_x = worker.x + 1;
         local_target_y = worker.y;
-        if collision_matrix[local_target_x][local_target_y] == 0 {
+        if matrix_get(collision_matrix, local_target_x, local_target_y, height) == 0 {
             info(`old worker x: ${worker.x}`);
             worker.move_right();
             info(`new worker x: ${worker.x}`);
-            collision_matrix[local_target_x][local_target_y] = 1;
-            collision_matrix[worker.x][worker.y] = 0;
+            collision_matrix = matrix_set(collision_matrix, local_target_x, local_target_y, height, 1);
+            collision_matrix = matrix_set(collision_matrix, worker.x, worker.y, height, 0);
             return collision_matrix;
         }
     }
@@ -405,10 +435,10 @@ fn move_to_position(worker, target_position, collision_matrix, width, height) {
         // go left
         local_target_x = worker.x - 1;
         local_target_y = worker.y;
-        if collision_matrix[local_target_x][local_target_y] == 0 {
+        if matrix_get(collision_matrix, local_target_x, local_target_y, height) == 0 {
             worker.move_left();
-            collision_matrix[local_target_x][local_target_y] = 1;
-            collision_matrix[worker.x][worker.y] = 0;
+            collision_matrix = matrix_set(collision_matrix, local_target_x, local_target_y, height, 1);
+            collision_matrix = matrix_set(collision_matrix, worker.x, worker.y, height, 0);
             return collision_matrix;
         }
     }
@@ -419,10 +449,10 @@ fn move_to_position(worker, target_position, collision_matrix, width, height) {
         // go up
         local_target_x = worker.x;
         local_target_y = worker.y + 1;
-        if collision_matrix[local_target_x][local_target_y] == 0 {
+        if matrix_get(collision_matrix, local_target_x, local_target_y, height) == 0 {
             worker.move_up();
-            collision_matrix[local_target_x][local_target_y] = 1;
-            collision_matrix[worker.x][worker.y] = 0;
+            collision_matrix = matrix_set(collision_matrix, local_target_x, local_target_y, height, 1);
+            collision_matrix = matrix_set(collision_matrix, worker.x, worker.y, height, 0);
             return collision_matrix;
         }
     }
@@ -430,10 +460,10 @@ fn move_to_position(worker, target_position, collision_matrix, width, height) {
         // go down
         local_target_x = worker.x;
         local_target_y = worker.y - 1;
-        if collision_matrix[local_target_x][local_target_y] == 0 {
+        if matrix_get(collision_matrix, local_target_x, local_target_y, height) == 0 {
             worker.move_down();
-            collision_matrix[local_target_x][local_target_y] = 1;
-            collision_matrix[worker.x][worker.y] = 0;
+            collision_matrix = matrix_set(collision_matrix, local_target_x, local_target_y, height, 1);
+            collision_matrix = matrix_set(collision_matrix, worker.x, worker.y, height, 0);
             return collision_matrix;
         }
     }
