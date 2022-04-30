@@ -402,7 +402,7 @@ fn move_to_position_2(worker_position, target_position, collision_matrix, full_m
 */
 
 
-fn move_to_position(worker, target_position, collision_matrix, width, height) {
+fn move_to_position(worker, target_position, collision_matrix, width, height, map) {
     // Move towards the target_position if possible.
     // Otherwise if there is an obstacle (a worker with the same color) it try to change direction otherwise it stops.
 
@@ -468,9 +468,34 @@ fn move_to_position(worker, target_position, collision_matrix, width, height) {
         }
     }
 
-    // otherwise stay still
+    // otherwise move randomly
+    collision_matrix = move_randomly_to_free_tile(worker, collision_matrix, width, height, map);
     return collision_matrix;
 
+}
+
+
+fn move_randomly_to_free_tile(worker, collision_matrix, width, height, map) {
+    let neighbours = find_neighbours_positions([worker.x, worker.y], map, width, height);
+    let free_neighbours = [];
+    for neighbour in free_neighbours {
+        if matrix_get(collision_matrix, neighbour[0], neighbour[1], height) == 0 {
+            free_neighbours.push(neighbour);
+        }
+    }
+
+    if len(free_neighbours) == 0 {
+        return collision_matrix;
+    }
+
+    let choice = (rand() % len(free_neighbours)).abs();
+    // 2 increment choose enemy or empty tile if possible.
+
+    let dest_tile = free_neighbours[choice];
+
+    collision_matrix = move_to_position(worker, dest_tile, collision_matrix, width, height, map);
+
+    return collision_matrix;
 }
 
 
@@ -546,7 +571,7 @@ for w in 0..N_WORKERS {
             position = select_closest_position_from_connected_components(positions, map, team_color, WIDTH, HEIGHT);
         }
 
-        COLLISION_MATRIX = move_to_position(worker, position, COLLISION_MATRIX, WIDTH, HEIGHT);
+        FULL_MATRIX = move_to_position(worker, position, FULL_MATRIX, WIDTH, HEIGHT, map);
         // info(`${worker.x} - ${worker.y} moves to ${positions[0]}`);
     }
 }
