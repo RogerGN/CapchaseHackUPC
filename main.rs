@@ -3,6 +3,8 @@ let WIDTH = 40;
 let HEIGHT = 40;
 let N_WORKERS = 8;
 
+let RADIUS = 35;
+
 // I have to init the collision matrix with the positions of the workers
 // The collision matrix keeps track of the actual or future positions of our workers
 // and is used in order to avoid to move a worker in a tile that is or will be occipied by another worker during the next iteration
@@ -541,5 +543,8 @@ for w in 0..N_WORKERS {
 
         FULL_MATRIX = move_to_position(worker, position, FULL_MATRIX, WIDTH, HEIGHT, map);
         // info(`${worker.x} - ${worker.y} moves to ${positions[0]}`);
+    } else {
+        FULL_MATRIX = move_randomly_to_free_tile(worker, FULL_MATRIX, width, height, map);
+        info(`random_movement`);
     }
 }
