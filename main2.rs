@@ -6,7 +6,7 @@ info(`version ${version}`);
 let width = 40;
 let height = 40;
 let n_workers = 8;
-let collision_matrix = build_matrix(width, height);
+let collision_matrix = build_matrix(width, height, map);
 
 //memory initialize ///////////////////////////////////////////////
 if "tick" in memory == false {
@@ -94,7 +94,7 @@ if len(closest_colorable_tiles) < n_workers {
 }
 */
 
-fn build_matrix(width, height, map, isInitial) {
+fn build_matrix(width, height, map) {
     /*
     It builds a matrix initializing it to 0
     */
@@ -107,12 +107,9 @@ fn build_matrix(width, height, map, isInitial) {
         }
     }
 
-    if(isInitial)
-    {
-        for w in map.workers {
-            matrix[w.x][w.y] = "w"
-        } 
-    }
+    for w in map.workers {
+        matrix[w.x][w.y] = "w"
+    } 
 
     return matrix;
 }
@@ -207,7 +204,7 @@ fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map,
     */
 
     // Visited matrix
-    let visited_matrix = build_matrix(width, height);
+    let visited_matrix = build_matrix(width, height, map);
 
     // I should run a bfs starting from the target position
     let closest_colorable_tiles = [];
