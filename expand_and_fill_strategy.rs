@@ -504,4 +504,3 @@ if(memory.strategy == 0) //expand
         "bottom-left" => moveWorkers(n_workers, width, height, collision_matrix, memory.spawningCorner, map.workers, map, [4,2,1]),
     }
 }
-
