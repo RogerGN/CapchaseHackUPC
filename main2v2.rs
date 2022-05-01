@@ -6,7 +6,7 @@ info(`version ${version}`);
 let width = 40;
 let height = 40;
 let n_workers = 8;
-let collision_matrix = build_matrix(width, height);
+let collision_matrix = build_matrix(width, height, map, true);
 
 //memory initialize ///////////////////////////////////////////////
 if "tick" in memory == false {
@@ -65,6 +65,26 @@ if "map" in memory == false {
 
 //functions
 
+fn getIfTileshunksAreDivided(map, ourColour)
+{
+    //build matrix
+    let matrix = [];
+    for x in 0..40 {
+        for y in 0..40 {
+            if map[x][y] == ourColour {
+                matrix[x][y].push("c");
+            }
+            else
+            {
+                matrix[x][y].push("-");
+            }
+        }
+    }
+
+    //traverse matrix
+
+
+}
 
 /*
 
@@ -198,7 +218,7 @@ fn find_corner_position(width, height) {
     return position;
 }
 
-fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map, width, height, team_color) {
+fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map, collision_matrix, width, height, team_color) {
     /*
     It finds the first "n" closest colorable tiles to the target position (it only works for corner positions)
     It finds all tiles at the same distance
@@ -207,7 +227,7 @@ fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map,
     */
 
     // Visited matrix
-    let visited_matrix = build_matrix(width, height);
+    let visited_matrix = build_matrix(width, height, map, false);
 
     // I should run a bfs starting from the target position
     let closest_colorable_tiles = [];
@@ -228,7 +248,7 @@ fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map,
         let x = current_position[0];
         let y = current_position[1];
 
-        if map[x][y] != team_color {
+        if map[x][y] != team_color && is_reacheable([x, y], collision_matrix, map, width, height) {
             if found_level == -1 || found_level == current_level {
                 closest_colorable_tiles.push(current_position);
                 found_level = current_level;
@@ -271,7 +291,41 @@ fn compute_distance(position_a, position_b) {
     return distance;
 }
 
-fn move_to_position(worker, position, collision_matrix) {
+fn is_reacheable(position, collision_matrix, map, width, height) {
+    let neighbours = find_neighbours_positions(position, map, width, height);
+    for neighbour in neighbours {
+        if collision_matrix[neighbour[0]][neighbour[1]] == 0 {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+fn move_randomly_to_free_tile(worker, collision_matrix, width, height, map) {
+    let neighbours = find_neighbours_positions([worker.x, worker.y], map, width, height);
+    let free_neighbours = [];
+    for neighbour in neighbours {
+        if collision_matrix[neighbour[0]][neighbour[1]] == 0 {
+            free_neighbours.push(neighbour);
+        }
+    }
+
+    if len(free_neighbours) == 0 {
+        return collision_matrix;
+    }
+
+    let choice = (rand() % len(free_neighbours)).abs();
+    // 2 increment choose enemy or empty tile if possible.
+
+    let dest_tile = free_neighbours[choice];
+
+    collision_matrix = move_to_position(worker, dest_tile, collision_matrix, width, height, map);
+
+    return collision_matrix;
+}
+
+fn move_to_position(worker, position, collision_matrix, width, height, map) {
     // move towards the position if possible
 
     // just move to position for now
@@ -333,9 +387,8 @@ fn move_to_position(worker, position, collision_matrix) {
         }
     }
 
-    // otherwise stay still
+    // otherwise move randomly
     return collision_matrix;
-
 }
 
 
@@ -397,6 +450,7 @@ fn lookOnlyForNodesAtTheFrontIfPossible(positions, worker_position, spawnCorner)
         },
     }
 
+    //#check possible nodes do not surpass 30,30 space
 
     return [positions, notPrioritaryNodesQueue];
 }
@@ -458,17 +512,21 @@ fn moveWorkers(n_workers, width, height, collision_matrix, spawnCorner, worker, 
         {
             let worker = worker(w);
             let worker_position = [worker.x, worker.y];
-            let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, width, height, worker.color);
+            let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, collision_matrix, width, height, worker.color);
             positions = lookOnlyForNodesAtTheFrontIfPossible(positions, worker_position, spawnCorner);
             if(positions[0].len() != 0)
             {
                 let index = (rand() % len(positions[0])).abs();
-                collision_matrix = move_to_position(worker, positions[0][index], collision_matrix);
+                collision_matrix = move_to_position(worker, positions[0][index], collision_matrix, width, height, map);
             }
-            else
+            else if(positions[1].len() != 0)
             {
                 let index = (rand() % len(positions[1])).abs();
-                collision_matrix = move_to_position(worker, positions[1][index], collision_matrix);
+                collision_matrix = move_to_position(worker, positions[1][index], collision_matrix, width, height, map);
+            }
+            else {
+                collision_matrix = move_randomly_to_free_tile(worker, collision_matrix, width, height, map);
+                info(`random_movement`);
             }
             
         }
@@ -479,17 +537,21 @@ fn moveWorkers(n_workers, width, height, collision_matrix, spawnCorner, worker, 
     {
         let worker = worker(w);
             let worker_position = [worker.x, worker.y];
-            let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, width, height, worker.color);
+            let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, collision_matrix, width, height, worker.color);
             positions = lookOnlyForNodesAtTheBackIfPossible(positions, worker_position, spawnCorner);
             if(positions[0].len() != 0)
             {
                 let index = (rand() % len(positions[0])).abs();
-                collision_matrix = move_to_position(worker, positions[0][index], collision_matrix);
+                collision_matrix = move_to_position(worker, positions[0][index], collision_matrix, width, height, map);
             }
-            else
+            else if(positions[1].len() != 0)
             {
                 let index = (rand() % len(positions[1])).abs();
-                collision_matrix = move_to_position(worker, positions[1][index], collision_matrix);
+                collision_matrix = move_to_position(worker, positions[1][index], collision_matrix, width, height, map);
+            }
+            else {
+                collision_matrix = move_randomly_to_free_tile(worker, collision_matrix, width, height, map);
+                info(`random_movement`);
             }
     }    
 }

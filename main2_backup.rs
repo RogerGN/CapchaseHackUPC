@@ -6,7 +6,7 @@ info(`version ${version}`);
 let width = 40;
 let height = 40;
 let n_workers = 8;
-let collision_matrix = build_matrix(width, height);
+let collision_matrix = build_matrix(width, height, map, true);
 
 //memory initialize ///////////////////////////////////////////////
 if "tick" in memory == false {
@@ -207,7 +207,7 @@ fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map,
     */
 
     // Visited matrix
-    let visited_matrix = build_matrix(width, height);
+    let visited_matrix = build_matrix(width, height, map, false);
 
     // I should run a bfs starting from the target position
     let closest_colorable_tiles = [];
@@ -271,7 +271,30 @@ fn compute_distance(position_a, position_b) {
     return distance;
 }
 
-fn move_to_position(worker, position, collision_matrix) {
+fn move_randomly_to_free_tile(worker, collision_matrix, width, height, map) {
+    let neighbours = find_neighbours_positions([worker.x, worker.y], map, width, height);
+    let free_neighbours = [];
+    for neighbour in neighbours {
+        if collision_matrix[neighbour[0]][neighbour[1]] == 0 {
+            free_neighbours.push(neighbour);
+        }
+    }
+
+    if len(free_neighbours) == 0 {
+        return collision_matrix;
+    }
+
+    let choice = (rand() % len(free_neighbours)).abs();
+    // 2 increment choose enemy or empty tile if possible.
+
+    let dest_tile = free_neighbours[choice];
+
+    collision_matrix = move_to_position(worker, dest_tile, collision_matrix, width, height, map);
+
+    return collision_matrix;
+}
+
+fn move_to_position(worker, position, collision_matrix, width, height, map) {
     // move towards the position if possible
 
     // just move to position for now
@@ -333,9 +356,9 @@ fn move_to_position(worker, position, collision_matrix) {
         }
     }
 
-    // otherwise stay still
+    // otherwise move randomly
+    collision_matrix = move_randomly_to_free_tile(worker, collision_matrix, width, height, map);
     return collision_matrix;
-
 }
 
 
@@ -397,6 +420,7 @@ fn lookOnlyForNodesAtTheFrontIfPossible(positions, worker_position, spawnCorner)
         },
     }
 
+    //#check possible nodes do not surpass 30,30 space
 
     return [positions, notPrioritaryNodesQueue];
 }
@@ -463,12 +487,12 @@ fn moveWorkers(n_workers, width, height, collision_matrix, spawnCorner, worker, 
             if(positions[0].len() != 0)
             {
                 let index = (rand() % len(positions[0])).abs();
-                collision_matrix = move_to_position(worker, positions[0][index], collision_matrix);
+                collision_matrix = move_to_position(worker, positions[0][index], collision_matrix, width, height, map);
             }
             else
             {
                 let index = (rand() % len(positions[1])).abs();
-                collision_matrix = move_to_position(worker, positions[1][index], collision_matrix);
+                collision_matrix = move_to_position(worker, positions[1][index], collision_matrix, width, height, map);
             }
             
         }
@@ -484,12 +508,12 @@ fn moveWorkers(n_workers, width, height, collision_matrix, spawnCorner, worker, 
             if(positions[0].len() != 0)
             {
                 let index = (rand() % len(positions[0])).abs();
-                collision_matrix = move_to_position(worker, positions[0][index], collision_matrix);
+                collision_matrix = move_to_position(worker, positions[0][index], collision_matrix, width, height, map);
             }
             else
             {
                 let index = (rand() % len(positions[1])).abs();
-                collision_matrix = move_to_position(worker, positions[1][index], collision_matrix);
+                collision_matrix = move_to_position(worker, positions[1][index], collision_matrix, width, height, map);
             }
     }    
 }
