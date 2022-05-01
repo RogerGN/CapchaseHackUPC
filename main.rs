@@ -3,7 +3,7 @@ let WIDTH = 40;
 let HEIGHT = 40;
 let N_WORKERS = 8;
 
-let RADIUS = 35;
+let RADIUS = 30;
 
 // I have to init the collision matrix with the positions of the workers
 // The collision matrix keeps track of the actual or future positions of our workers
@@ -148,7 +148,7 @@ fn find_team_color() {
 }
 
 
-/*
+
 fn find_corner_position(width, height) {
     /*
         It returns the position [x, y] of our spawning corner
@@ -180,7 +180,6 @@ fn find_corner_position(width, height) {
     }
     return position;
 }
-*/
 
 
 /*
@@ -244,7 +243,22 @@ fn is_position_valid(target_position, width, height) {
 }
 
 
-fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map, width, height, team_color, other_workers_matrix) {
+fn find_neighbours_positions_radius(current_position, map, width, height, radius, corner) {
+    let neighbours = find_neighbours_positions(current_position, map, width, height);
+    
+    let inside_neighbours = [];
+    for neighbour in neighbours {
+        let distance = compute_max_components_distance(neighbour, corner);
+        if distance < radius {
+            inside_neighbours.push(neighbour);
+        }
+    }
+
+    return inside_neighbours;
+}
+
+
+fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map, width, height, team_color, other_workers_matrix, radius, corner) {
     /*
     It returns the closest colorable tiles to the target position. If some tiles has the same distance, it returns all of them.
     A colorable tile is a tile that is empty or colored with an enemy color
@@ -288,7 +302,7 @@ fn find_closest_colorable_tiles_to_position_equal_distance(target_position, map,
         }
 
         // Add neighbours to the queue
-        let neighbours_positions = find_neighbours_positions(current_position, map, width, height);
+        let neighbours_positions = find_neighbours_positions_radius(current_position, map, width, height, radius, corner);
         for neighbour_position in neighbours_positions {
             let neighbour_x = neighbour_position[0];
             let neighbour_y = neighbour_position[1];
@@ -448,7 +462,7 @@ fn move_to_position(worker, target_position, collision_matrix, width, height, ma
 fn move_randomly_to_free_tile(worker, collision_matrix, width, height, map) {
     let neighbours = find_neighbours_positions([worker.x, worker.y], map, width, height);
     let free_neighbours = [];
-    for neighbour in free_neighbours {
+    for neighbour in neighbours {
         if matrix_get(collision_matrix, neighbour[0], neighbour[1], height) == 0 {
             free_neighbours.push(neighbour);
         }
@@ -508,12 +522,30 @@ fn select_closest_position_from_connected_components(candidate_positions, map, t
 }
 
 
+fn compute_squared_distance(position_a, position_b) {
+    let x = abs(position_a[0] - position_b[0]);
+    let y = abs(position_a[1] - position_b[1]);
+    let distance = x*x + y*y;
+    return distance;
+}
+
+
+fn compute_max_components_distance(position_a, position_b) {
+    let x = abs(position_a[0] - position_b[0]);
+    let y = abs(position_a[1] - position_b[1]);
+    if x > y {
+        return x;
+    } else {
+        return y;
+    }
+}
+
+
 // I should do this only once
-/*
+
 if "corner_position" in memory == false {
     memory.corner_position = find_corner_position(WIDTH, HEIGHT);
 }
-*/
 let team_color = find_team_color();
 
 // info(`after find color`);
@@ -525,8 +557,9 @@ let team_color = find_team_color();
 for w in 0..N_WORKERS {
     let worker = worker(w);
     let worker_position = [worker.x, worker.y];
-    let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, WIDTH, HEIGHT, team_color, OTHER_WORKERS_MATRIX);
-    info(`${worker.x} - ${worker.y} - ${positions}`);
+    let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, WIDTH, HEIGHT, team_color, OTHER_WORKERS_MATRIX, RADIUS, memory.corner_position );
+    
+    info(`${worker.x} - ${worker.y}`);
     if len(positions) > 0 {
         let position = [0, 0];
 
@@ -544,7 +577,7 @@ for w in 0..N_WORKERS {
         FULL_MATRIX = move_to_position(worker, position, FULL_MATRIX, WIDTH, HEIGHT, map);
         // info(`${worker.x} - ${worker.y} moves to ${positions[0]}`);
     } else {
-        FULL_MATRIX = move_randomly_to_free_tile(worker, FULL_MATRIX, width, height, map);
+        FULL_MATRIX = move_randomly_to_free_tile(worker, FULL_MATRIX, WIDTH, HEIGHT, map);
         info(`random_movement`);
     }
 }
