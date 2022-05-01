@@ -5,6 +5,12 @@ let N_WORKERS = 8;
 
 let RADIUS = 30;
 
+// My workers
+let MY_WORKERS = [];
+for w in 0..N_WORKERS {
+    MY_WORKERS.push(worker(w))
+}
+
 // I have to init the collision matrix with the positions of the workers
 // The collision matrix keeps track of the actual or future positions of our workers
 // and is used in order to avoid to move a worker in a tile that is or will be occipied by another worker during the next iteration
@@ -248,7 +254,7 @@ fn find_neighbours_positions_radius(current_position, map, width, height, radius
     
     let inside_neighbours = [];
     for neighbour in neighbours {
-        let distance = compute_max_components_distance(neighbour, corner);
+        let distance = compute_distance(neighbour, corner);
         if distance < radius {
             inside_neighbours.push(neighbour);
         }
@@ -541,6 +547,21 @@ fn compute_max_components_distance(position_a, position_b) {
 }
 
 
+fn find_center(MY_WORKERS) {
+    let x = 0;
+    let y = 0;
+    for worker in MY_WORKERS {
+        x += worker.x;
+        y += worker.y;
+    }
+
+    x = x / len(MY_WORKERS);
+    y = y / len(MY_WORKERS);
+
+    return [x, y];
+}
+
+
 // I should do this only once
 
 if "corner_position" in memory == false {
@@ -553,11 +574,14 @@ let team_color = find_team_color();
 // info(`corner position: ${memory.corner_position}`);
 // info(`team color: ${team_color}`);
 
+let center = find_center(MY_WORKERS);
+info(`center: ${center}`);
+
 // For each worker find the closest empty or enemy tile
 for w in 0..N_WORKERS {
     let worker = worker(w);
     let worker_position = [worker.x, worker.y];
-    let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, WIDTH, HEIGHT, team_color, OTHER_WORKERS_MATRIX, RADIUS, memory.corner_position );
+    let positions = find_closest_colorable_tiles_to_position_equal_distance(worker_position, map, WIDTH, HEIGHT, team_color, OTHER_WORKERS_MATRIX, RADIUS, find_center(MY_WORKERS));
     
     info(`${worker.x} - ${worker.y}`);
     if len(positions) > 0 {
